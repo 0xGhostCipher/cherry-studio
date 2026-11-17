@@ -415,6 +415,24 @@ export class AgentSessionMessageService {
     )
   }
 
+  /** The latest assistant reply under a user message. */
+  replyTo(sessionId: string, userMessageId: string): { id: string; status: string } | undefined {
+    return application
+      .get('DbService')
+      .getDb()
+      .select({ id: sessionMessagesTable.id, status: sessionMessagesTable.status })
+      .from(sessionMessagesTable)
+      .where(
+        and(
+          eq(sessionMessagesTable.sessionId, sessionId),
+          eq(sessionMessagesTable.parentId, userMessageId),
+          eq(sessionMessagesTable.role, 'assistant')
+        )
+      )
+      .orderBy(desc(sessionMessagesTable.createdAt), desc(sessionMessagesTable.id))
+      .get()
+  }
+
   inputBinding(sessionId: string, messageId: string) {
     return application
       .get('DbService')

@@ -245,7 +245,9 @@ export class PiDurableRuntimeConnection implements AgentRuntimeConnection {
           const nowActive = event.activity.state === 'active'
           if (nowActive && !this.sending && !this.closing)
             this.beginAutonomous(
-              batch.backgroundResults.status === 'confirmed' ? batch.backgroundResults.value.notification : undefined
+              batch.backgroundResults.status === 'confirmed' ? batch.backgroundResults.value.notification : undefined,
+              // After reopen, Durable resumes a placed input that has no outcome yet.
+              event.inputs.find((input) => input.inputId && input.facts.includes('placed') && !input.outcome)?.inputId
             )
           for (const input of event.inputs) this.captureInput(input)
           this.active = nowActive
@@ -294,12 +296,18 @@ export class PiDurableRuntimeConnection implements AgentRuntimeConnection {
     }
   }
 
-  private beginAutonomous(sourceToolCallIds?: readonly string[]) {
+  private beginAutonomous(sourceToolCallIds?: readonly string[], resumedInputId?: string) {
     this.sending = true
     this.autonomous = true
     this.failure = undefined
     this.turnUsage.reset()
-    this.events.push({ type: 'autonomous-turn-state', state: 'started', origin: this.nextOrigin, sourceToolCallIds })
+    this.events.push({
+      type: 'autonomous-turn-state',
+      state: 'started',
+      origin: this.nextOrigin,
+      sourceToolCallIds,
+      ...(resumedInputId && { resumedInputId })
+    })
     this.nextOrigin = { kind: 'background-work' }
   }
 
