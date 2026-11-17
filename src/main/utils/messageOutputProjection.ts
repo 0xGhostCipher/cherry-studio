@@ -136,9 +136,45 @@ function toCitationSkeleton(output: unknown): unknown | undefined {
   }
 }
 
+/**
+ * Whether the strings and kept keys alone exceed `limit` characters; JSON spends at least one UTF-8 byte on each.
+ * Undefined when a cycle or `toJSON` leaves the answer to serialization.
+ */
+function textExceeds(value: unknown, limit: number): boolean | undefined {
+  let remaining = limit
+  const path = new Set<object>()
+  const visit = (node: unknown): boolean | undefined => {
+    if (typeof node === 'string') return (remaining -= node.length) < 0
+    if (node === null || typeof node !== 'object') return false
+    if (path.has(node) || typeof (node as { toJSON?: unknown }).toJSON === 'function') return undefined
+    path.add(node)
+    try {
+      if (Array.isArray(node)) {
+        for (const item of node) {
+          const exceeds = visit(item)
+          if (exceeds !== false) return exceeds
+        }
+        return false
+      }
+      for (const [key, child] of Object.entries(node)) {
+        if (child === undefined || typeof child === 'function' || typeof child === 'symbol') continue
+        if ((remaining -= key.length) < 0) return true
+        const exceeds = visit(child)
+        if (exceeds !== false) return exceeds
+      }
+      return false
+    } finally {
+      path.delete(node)
+    }
+  }
+  return visit(value)
+}
+
 /** Whether a serialized payload exceeds the renderer transport budget. */
 function exceedsToolOutputTransportLimit(output: unknown): boolean {
   if (output === undefined || output === null) return false
+  // Decides large payloads without serializing them; only small ones are measured exactly.
+  if (textExceeds(output, DEFER_TOOL_OUTPUT_BYTES)) return true
   try {
     const serialized = JSON.stringify(output)
     if (serialized === undefined) return false
