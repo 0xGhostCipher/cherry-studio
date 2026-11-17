@@ -1283,6 +1283,8 @@ export class AgentSessionRuntimeService extends BaseService {
       reasoningEffort?: ReasoningEffortOption
       serviceTier?: ServiceTierSelection
       fastMode?: boolean
+      /** Answer after the current work instead of steering it. */
+      followUp?: boolean
     } = {}
   ): void {
     this.assertSessionWritable(sessionId)
@@ -1341,6 +1343,7 @@ export class AgentSessionRuntimeService extends BaseService {
     }
     if (
       interactive &&
+      !opts.followUp &&
       entry.runtimeState.execution.kind === 'turn' &&
       entry.runtimeState.execution.reply.delivery.kind === 'open' &&
       this.isTurnLive(entry, turn) &&
