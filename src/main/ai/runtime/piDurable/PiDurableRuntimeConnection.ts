@@ -59,6 +59,7 @@ export class PiDurableRuntimeConnection implements AgentRuntimeConnection {
   }
 
   readonly retainWhileIdle = true
+  readonly retainOnStop = true
   readonly usageCapture = { owner: 'provider-calls' as const }
   readonly events = new AsyncEventQueue<AgentRuntimeEvent>()
   private runtime?: PiDurableRuntime
@@ -75,6 +76,8 @@ export class PiDurableRuntimeConnection implements AgentRuntimeConnection {
   private compacting = false
   private autonomous = false
   private failure?: unknown
+  private admission: Promise<unknown> = Promise.resolve()
+  private runEnded?: PromiseWithResolvers<void>
   private nextOrigin: AutonomousTurnOrigin = { kind: 'background-work' }
   private providerSessionId?: string
   private readonly turnUsage = new PiTurnUsage()
@@ -212,7 +215,9 @@ export class PiDurableRuntimeConnection implements AgentRuntimeConnection {
       parts: input.message.data.parts
     })
     this.input.onInputPrepared?.(input.message.id, this.context!.id)
-    const result = await this.handle!.input.submit(draft)
+    const submitted = this.handle!.input.submit(draft)
+    this.admission = submitted.catch(() => undefined)
+    const result = await submitted
     this.events.push({ type: 'input-submission', contextId: this.context!.id, result })
     if (result.status !== 'acknowledged') {
       applyNativeSubmissionResult(this.input.sessionId, this.context!.id, result)
@@ -244,16 +249,12 @@ export class PiDurableRuntimeConnection implements AgentRuntimeConnection {
             )
           for (const input of event.inputs) this.captureInput(input)
           this.active = nowActive
-          for (const relation of event.subagents ?? [])
-            if (relation.child) void this.observeChild(relation.child.id).catch((error) => this.fail(error))
+          for (const relation of event.subagents ?? []) if (relation.child) this.watchChild(relation.child.id)
         } else if (event.type === 'input.changed') this.captureInput(event.input)
-        else if (event.type === 'subagent.upsert' && event.subagent.child)
-          void this.observeChild(event.subagent.child.id).catch((error) => this.fail(error))
-        else if (
-          event.type === 'diagnostic' ||
-          (event.type === 'gap' && !['overflow', 'mapping-reset'].includes(event.reason))
-        )
-          throw new Error(event.type === 'gap' ? `Durable observation gap: ${event.reason}` : event.error.message)
+        else if (event.type === 'subagent.upsert' && event.subagent.child) this.watchChild(event.subagent.child.id)
+        // Durable follows each gap with a recovery snapshot; neither a gap nor a diagnostic ends native work.
+        else if (event.type === 'diagnostic' || (event.type === 'gap' && event.reason === 'disconnected'))
+          logger.warn('Durable observation fault', { sessionId: this.input.sessionId, event })
         else if (event.type === 'closed' && event.reason !== 'shutdown' && !this.closing)
           throw new Error(`Durable observation ended: ${event.reason}`)
       }
@@ -339,6 +340,8 @@ export class PiDurableRuntimeConnection implements AgentRuntimeConnection {
       this.autonomous = false
       this.events.push({ type: 'autonomous-turn-state', state: 'finished' })
     }
+    this.runEnded?.resolve()
+    this.runEnded = undefined
   }
 
   private onBehavior(event: BehaviorEvent) {
@@ -350,6 +353,11 @@ export class PiDurableRuntimeConnection implements AgentRuntimeConnection {
         this.projection?.notice(event.notice.text)
       }
     }
+  }
+
+  /** A failed child attachment is retried by the next snapshot that lists the child. */
+  private watchChild(id: string) {
+    void this.observeChild(id).catch((error) => logger.warn('Failed to release Durable child', { id, error }))
   }
 
   private childKey(id: string): string {
@@ -422,23 +430,32 @@ export class PiDurableRuntimeConnection implements AgentRuntimeConnection {
             ...access,
             observe: (sink) =>
               access.observe(async (event) => {
-                await sink(event)
-                if (event.type === 'subagent.upsert' && event.subagent.child)
-                  void this.observeChild(event.subagent.child.id)
-                if (event.type === 'snapshot') {
-                  for (const child of event.subagents ?? []) if (child.child) void this.observeChild(child.child.id)
-                  if (this.closing) return
-                  const facts = await access.durable.facts()
-                  this.childTasks.publish(
-                    id,
-                    facts.live.idle
-                      ? facts.live.runEnd?.outcome === 'completed'
-                        ? 'completed'
-                        : facts.live.runEnd?.outcome === 'aborted'
-                          ? 'stopped'
-                          : 'error'
-                      : 'in_progress'
-                  )
+                try {
+                  await sink(event)
+                  if (event.type === 'subagent.upsert' && event.subagent.child)
+                    void this.observeChild(event.subagent.child.id)
+                  if (event.type === 'snapshot') {
+                    for (const child of event.subagents ?? []) if (child.child) void this.observeChild(child.child.id)
+                    if (this.closing) return
+                    const facts = await access.durable.facts()
+                    this.childTasks.publish(
+                      id,
+                      facts.live.idle
+                        ? facts.live.runEnd?.outcome === 'completed'
+                          ? 'completed'
+                          : facts.live.runEnd?.outcome === 'aborted'
+                            ? 'stopped'
+                            : 'error'
+                        : 'in_progress'
+                    )
+                  }
+                } catch (error) {
+                  // Rethrowing would reach the backend error hook and close every root on it.
+                  logger.warn('Durable child observation failed; resynchronizing', { id, error })
+                  if (!this.closing)
+                    void projection
+                      .attach()
+                      .catch((cause) => logger.warn('Durable child resync failed', { id, error: cause }))
                 }
               })
           },
@@ -524,8 +541,22 @@ export class PiDurableRuntimeConnection implements AgentRuntimeConnection {
   }
 
   async interrupt(): Promise<void> {
+    // The stop must name the turn of a submission that is still being admitted.
+    await this.admission
+    const ended = this.sending ? (this.runEnded ??= Promise.withResolvers<void>()).promise : undefined
+    const requested = this.requestStop()
+    void Promise.all([requested, ended]).then(
+      () => this.events.push({ type: 'stop-confirmed' }),
+      () => {}
+    )
+    await requested
+  }
+
+  private async requestStop(): Promise<void> {
     const result = await this.handle?.interrupt?.()
     if (result && result.status !== 'confirmed') throw new Error(result.error.message)
+    // Native user stop leaves background children running; product Stop ends them too.
+    for (const id of this.childTasks.running()) await this.stopTask(id)
   }
 
   refreshTraceContext(context: AgentRuntimeTraceContext) {
