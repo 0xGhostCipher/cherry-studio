@@ -274,7 +274,8 @@ export class PiDurableRuntimeConnection implements AgentRuntimeConnection {
         active: results.status !== 'confirmed' || results.value.active
       })
       if (batch.completion && !this.compacting && !this.closing && this.sending) {
-        const failed = batch.completion.inputs.find((input) => input.outcome && input.outcome !== 'completed')
+        const { inputs } = batch.completion
+        const failed = inputs.find((input) => input.outcome === 'failed' || input.outcome === 'unanswered')
         if (failed) {
           this.failure ??= Object.assign(new Error(failed.error?.message ?? failed.outcome), {
             reason: failed.error?.code,
@@ -284,7 +285,8 @@ export class PiDurableRuntimeConnection implements AgentRuntimeConnection {
             })
           })
         }
-        this.finishTurn(batch.completion.entryId)
+        const aborted = inputs.some((input) => input.outcome === 'aborted')
+        this.finishTurn(aborted ? undefined : batch.completion.entryId, aborted)
       }
     } catch (error) {
       this.fail(error)
@@ -312,7 +314,7 @@ export class PiDurableRuntimeConnection implements AgentRuntimeConnection {
     }
   }
 
-  private finishTurn(entryId?: string) {
+  private finishTurn(entryId?: string, aborted = false) {
     if (this.closing || !this.sending) return
     this.sending = false
     this.events.push(
@@ -320,6 +322,7 @@ export class PiDurableRuntimeConnection implements AgentRuntimeConnection {
         ? { type: 'error', error: this.failure }
         : {
             type: 'turn-complete',
+            ...(aborted && { status: 'paused' as const }),
             ...(entryId && {
               forkAnchor: {
                 checkpoint: {
