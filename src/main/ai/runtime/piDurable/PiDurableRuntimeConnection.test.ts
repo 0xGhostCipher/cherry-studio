@@ -1555,6 +1555,8 @@ describe('desktop Pi Durable connection', () => {
       const view = await connection.childProjection('spawn')
       expect(view).toBeDefined()
       expect(view!.snapshot().canSubmit).toBe(true)
+      // A watched child stays loaded after it finishes, so close still owns its final archive flush.
+      if (scenario === 'retry archive flush') view!.subscribe(() => {})
       expect(text(events)).not.toContain('child first')
       held.open()
       await expect.poll(() => JSON.stringify(view!.snapshot().messages)).toContain('child first answer')
