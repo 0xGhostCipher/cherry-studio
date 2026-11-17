@@ -70,6 +70,7 @@
   "appMenu.zoomOut": "Micșorează",
   "backup.restore.failed": "Restaurare eșuată",
   "backup.restore.retry": "Copia de rezervă nu a fost restaurată. Datele anterioare au fost păstrate. Încercați din nou restaurarea.",
+  "chat.cherryai.sign_in_required": "Conectează-te la Cherry AI pentru a folosi acest model",
   "chat.conversation.new": "Conversație nouă",
   "common.agent_compaction_unchanged": "Nu a fost salvat niciun rezumat; conversația rămâne neschimbată.",
   "common.channel_available_commands": "Comenzi disponibile:",

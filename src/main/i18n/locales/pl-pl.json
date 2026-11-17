@@ -70,6 +70,7 @@
   "appMenu.zoomOut": "Pomniejsz",
   "backup.restore.failed": "Przywracanie nie powiodło się",
   "backup.restore.retry": "Kopia zapasowa nie została przywrócona. Poprzednie dane zostały zachowane. Spróbuj przywrócić ponownie.",
+  "chat.cherryai.sign_in_required": "Zaloguj się do Cherry AI, aby korzystać z tego modelu",
   "chat.conversation.new": "Nowy czat",
   "common.agent_compaction_unchanged": "Podsumowanie nie zostało zatwierdzone; rozmowa pozostała bez zmian.",
   "common.channel_available_commands": "Dostępne polecenia:",

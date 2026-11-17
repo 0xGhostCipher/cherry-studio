@@ -70,6 +70,7 @@
   "appMenu.zoomOut": "Σμίκρυνση",
   "backup.restore.failed": "Η αποκατάσταση απέτυχε",
   "backup.restore.retry": "Το αντίγραφο ασφαλείας δεν επαναφέρθηκε. Τα προηγούμενα δεδομένα σας διατηρήθηκαν. Δοκιμάστε ξανά την επαναφορά.",
+  "chat.cherryai.sign_in_required": "Συνδεθείτε στο Cherry AI για να χρησιμοποιήσετε αυτό το μοντέλο",
   "chat.conversation.new": "Νέα συνομιλία",
   "common.agent_compaction_unchanged": "Δεν καταχωρίστηκε σύνοψη· η συνομιλία παραμένει αμετάβλητη.",
   "common.channel_available_commands": "Διαθέσιμες εντολές:",

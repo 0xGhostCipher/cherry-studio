@@ -70,6 +70,7 @@
   "appMenu.zoomOut": "Uzaklaştır",
   "backup.restore.failed": "Geri yükleme başarısız",
   "backup.restore.retry": "Yedek geri yüklenemedi. Önceki verileriniz korundu. Lütfen geri yüklemeyi yeniden deneyin.",
+  "chat.cherryai.sign_in_required": "Bu modeli kullanmak için Cherry AI'da oturum açın",
   "chat.conversation.new": "Yeni Sohbet",
   "common.agent_compaction_unchanged": "Özet kaydedilmedi; konuşma değişmedi.",
   "common.channel_available_commands": "Kullanılabilir komutlar:",

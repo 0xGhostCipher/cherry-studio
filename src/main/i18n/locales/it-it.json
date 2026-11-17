@@ -70,6 +70,7 @@
   "appMenu.zoomOut": "Riduci",
   "backup.restore.failed": "Ripristino non riuscito",
   "backup.restore.retry": "Il backup non è stato ripristinato. I dati precedenti sono stati conservati. Riprova il ripristino.",
+  "chat.cherryai.sign_in_required": "Accedi a Cherry AI per usare questo modello",
   "chat.conversation.new": "Nuova chat",
   "common.agent_compaction_unchanged": "Nessun riepilogo è stato salvato; la conversazione resta invariata.",
   "common.channel_available_commands": "Comandi disponibili:",

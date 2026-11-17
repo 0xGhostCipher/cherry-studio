@@ -70,6 +70,7 @@
   "appMenu.zoomOut": "Dézoomer",
   "backup.restore.failed": "La restauration a échoué",
   "backup.restore.retry": "La sauvegarde n’a pas été restaurée. Vos données précédentes ont été conservées. Veuillez réessayer la restauration.",
+  "chat.cherryai.sign_in_required": "Connectez-vous à Cherry AI pour utiliser ce modèle",
   "chat.conversation.new": "Nouvelle conversation",
   "common.agent_compaction_unchanged": "Aucun résumé n’a été enregistré ; la conversation reste inchangée.",
   "common.channel_available_commands": "Commandes disponibles :",

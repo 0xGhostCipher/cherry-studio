@@ -70,6 +70,7 @@
   "appMenu.zoomOut": "Herauszoomen",
   "backup.restore.failed": "Wiederherstellung fehlgeschlagen",
   "backup.restore.retry": "Die Sicherung wurde nicht wiederhergestellt. Ihre bisherigen Daten wurden beibehalten. Bitte versuchen Sie die Wiederherstellung erneut.",
+  "chat.cherryai.sign_in_required": "Melde dich bei Cherry AI an, um dieses Modell zu nutzen",
   "chat.conversation.new": "Neuer Chat",
   "common.agent_compaction_unchanged": "Es wurde keine Zusammenfassung übernommen; die Unterhaltung bleibt unverändert.",
   "common.channel_available_commands": "Verfügbare Befehle:",

@@ -70,6 +70,7 @@
   "appMenu.zoomOut": "Oddálit",
   "backup.restore.failed": "Obnovení selhalo",
   "backup.restore.retry": "Záloha nebyla obnovena. Předchozí data byla zachována. Zkuste obnovení znovu.",
+  "chat.cherryai.sign_in_required": "Pro použití tohoto modelu se přihlaste k Cherry AI",
   "chat.conversation.new": "Nový chat",
   "common.agent_compaction_unchanged": "Shrnutí nebylo uloženo; konverzace zůstala beze změny.",
   "common.channel_available_commands": "Dostupné příkazy:",

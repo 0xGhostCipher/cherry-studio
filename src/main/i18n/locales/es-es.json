@@ -70,6 +70,7 @@
   "appMenu.zoomOut": "Alejar",
   "backup.restore.failed": "Restauración fallida",
   "backup.restore.retry": "No se restauró la copia de seguridad. Se conservaron sus datos anteriores. Intente restaurar de nuevo.",
+  "chat.cherryai.sign_in_required": "Inicia sesión en Cherry AI para usar este modelo",
   "chat.conversation.new": "Nuevo chat",
   "common.agent_compaction_unchanged": "No se guardó ningún resumen; la conversación no ha cambiado.",
   "common.channel_available_commands": "Comandos disponibles:",
