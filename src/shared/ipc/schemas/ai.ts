@@ -3,6 +3,7 @@ import * as z from 'zod'
 
 import { imageParamsSchema } from '@cherrystudio/provider-registry'
 import type { AgentAttachmentSelection } from '@cherrystudio/remote-protocol/agent'
+import { agentImportSnapshotSchema, type AgentImportSnapshot } from '@shared/ai/agentImport'
 import type { ClaudeCodeBinaryStatus } from '@shared/ai/claudeCodeBinary'
 import type { MessageProjectionUpdate, MessageProjectionView, ProjectionTarget } from '@shared/ai/messageProjection'
 import type {
@@ -210,6 +211,16 @@ const projectionTargetSchema = z.discriminatedUnion('kind', [
 ]) satisfies z.ZodType<ProjectionTarget>
 
 export const aiRequestSchemas = {
+  'ai.agent.import.prepare': defineRoute({
+    input: z.strictObject({ agentId: z.string() }),
+    output: agentImportSnapshotSchema.nullable()
+  }),
+  'ai.agent.import.status': defineRoute({
+    input: z.strictObject({ agentId: z.string() }),
+    output: agentImportSnapshotSchema.nullable()
+  }),
+  'ai.agent.import.start': defineRoute({ input: z.strictObject({ id: z.uuid() }), output: agentImportSnapshotSchema }),
+  'ai.agent.import.cancel': defineRoute({ input: z.strictObject({ id: z.uuid() }), output: z.void() }),
   'ai.projection.attach': defineRoute({
     input: z.strictObject({ target: projectionTargetSchema, subscriptionId: z.uuid() }),
     output: z.custom<MessageProjectionView | null>()
@@ -547,6 +558,7 @@ export const aiRequestSchemas = {
  * its coalescing/liveness intact — it does not `broadcast`.
  */
 export type AiEventSchemas = {
+  'ai.agent.import.progress': AgentImportSnapshot
   'ai.projection.changed': { subscriptionId: string; update: MessageProjectionUpdate }
   'ai.claude_code.binary.changed': ClaudeCodeBinaryStatus
   'ai.agent.attachment_selections.changed': { sessionId: string }

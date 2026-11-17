@@ -204,3 +204,13 @@ it('gives a returning preview a fresh identity after its previous instance commi
   update(view([entry(10, 'interrupted partial'), entry(11, 'resumed final answer')]))
   expect(projection.aliases).toMatchObject({ 'entry:10:0': interrupted, 'entry:11:0': resumed })
 })
+
+it('does not project imported history twice when a continuation is appended', () => {
+  const imported = { ...entry(1, 'Imported answer'), kind: 'cherry.imported-history' }
+  const { projection, update } = setup(view([imported]))
+  expect(projection.feed.snapshot.messages).toEqual([])
+  update(view([imported, entry(2, 'New answer')]))
+  expect(projection.feed.snapshot.messages).toHaveLength(1)
+  expect(JSON.stringify(projection.feed.snapshot.messages)).toContain('New answer')
+  expect(JSON.stringify(projection.feed.snapshot.messages)).not.toContain('Imported answer')
+})
